@@ -105,8 +105,8 @@ def create_retriever(DOCUMENT_URL="https://lilianweng.github.io/posts/2023-06-23
 def query_generator(original_query):
 
 
-    query = original_query.get("query")
-    print("Original Query:", query)
+    #query = original_query.get("query")
+    #print("Original Query:", query)
 
     class LineListOutputParser(BaseOutputParser[List[str]]):
         """Output parser for a list of lines."""
@@ -122,7 +122,7 @@ def query_generator(original_query):
     different versions of the given user question to retrieve relevant documents from a vector 
     database. By generating multiple perspectives on the user question, your goal is to help
     the user overcome some of the limitations of the distance-based similarity search. 
-    Provide these alternative questions separated by newlines. Original question: {question}
+    Provide these alternative questions separated by newlines. Original question: {query}
         """
     )
 
@@ -132,7 +132,7 @@ def query_generator(original_query):
     #llm_chain = RunnableMap(QUERY_PROMPT | llm | output_parser)
     llm_chain = (
             RunnableMap({
-                "question": itemgetter("question")
+                "query": itemgetter("query")
             })
             | QUERY_PROMPT
             | llm
@@ -140,10 +140,11 @@ def query_generator(original_query):
     )
 
 
-    queries = llm_chain.invoke({"question": query})
+    #queries = llm_chain.invoke({"question": query})
+    queries = llm_chain.invoke(original_query)
 
     # Add original query
-    queries.insert(0, "0. " + query)
+    queries.insert(0, "0. " + original_query['query'])
 
     # Print for debugging
     print('Generated queries:\n', '\n'.join(queries))
@@ -152,12 +153,13 @@ def query_generator(original_query):
 
 
 
-def retriever(query: str):
+def retriever(query: dict):
     # Step 1: Call the vector DB retriever
     vector_db_retriever = create_retriever()
 
     # Step 2: Generate queries once
-    queries = query_generator({"query": query})
+    #queries = query_generator({"query": query})
+    queries = query_generator(query)
 
     # Step 3: Retrieve documents for each query
     all_docs = []
@@ -175,12 +177,11 @@ def retriever(query: str):
 
 
 
-def final_answer_generate(question: str):
+def final_answer_generate(question: dict):
     """
     Retrieves relevant documents using `retriever` and generates an AI response.
     """
-    query = question["query"]
-    docs = retriever(query)
+    docs = retriever(question)
 
     # RAG
     template = """Answer the following question based on this context:
@@ -196,7 +197,11 @@ def final_answer_generate(question: str):
     context_text = "\n\n".join(doc.page_content for doc in docs)
 
     chain = (
-            RunnableLambda(lambda x: {"context": context_text, "question": query})
+            RunnableLambda(lambda x: {"context": context_text, "question": question["query"]})
+            # RunnableMap({
+            #     "question": dict(question),
+            #     "context": lambda x: context_text
+            # })
             | prompt
             | llm
             | StrOutputParser()
