@@ -196,19 +196,23 @@ def final_answer_generate(question: dict):
     llm = ChatOpenAI(temperature=0)
     context_text = "\n\n".join(doc.page_content for doc in docs)
 
+    prompt_input = {
+        "context": context_text,
+        "question": question["query"]
+    }
     chain = (
-            RunnableLambda(lambda x: {"context": context_text, "question": question["query"]})
+            #RunnableLambda(lambda x: {"context": context_text, "question": question["query"]})
             # RunnableMap({
             #     "question": dict(question),
             #     "context": lambda x: context_text
             # })
-            | prompt
+             prompt
             | llm
             | StrOutputParser()
     )
 
 
-    result = chain.invoke({})
+    result = chain.invoke(prompt_input)
 
     return result
 
