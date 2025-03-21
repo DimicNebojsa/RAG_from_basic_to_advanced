@@ -4,3 +4,15 @@
 python -m venv myenv
 
 source myenv/bin/activate 
+
+
+### Milvus docker
+
+go to do yml file folder
+
+docker compose -f milvus-docker-compose.yml up -d  
+
+docker ps
+
+
+
