@@ -100,22 +100,6 @@ def query_generator(original_query):
 
     return queries
 
-def retrieve_and_rag(question,prompt_rag,sub_question_generator_chain,llm):
-    sub_questions = sub_question_generator_chain.invoke({"query": question})
-
-    rag_result = []
-
-    for sub_question in sub_questions:
-        retrieved_docs = retriever.get_relevant_documents(sub_question)
-
-        chain = prompt_rag | llm | StrOutputParser()
-
-        answer = chain.invoke({"context": retrieved_docs,
-                "question": sub_question})
-
-        rag_result.append(answer)
-    return rag_result,sub_questions
-
 def retriever(query):
     """Retriever using external query generation.
 
